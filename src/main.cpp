@@ -1,5 +1,6 @@
 #include "main.h"
 #include "line.h"
+#include "maze.h"
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
@@ -35,6 +36,11 @@ float vertices_v[] = {
     0.0f,  0.5f, 0.0f
 };
 Line vertical(vertices_v);
+
+glm::vec3 row_gap(1.0f, 0.0f, 0.0f);
+glm::vec3 col_gap(0.0f, 1.0f, 0.0f);
+
+Maze maze(rows, cols, row_gap, col_gap, row_gap, col_gap, glm::vec3(2.0f, 2.0f, 0.0f));
 
 GLFWwindow* createWindow()
 {
@@ -131,30 +137,8 @@ int main()
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glBindVertexArray(VAO_h);
-        for(int r=0; r < rows+1; r++)
-        {
-            glm::vec3 start = glm::vec3(-7.0f, 3+4.0f-r, 0.0f);
-            for(int c=0; c < cols; c++)
-            {
-                glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*glm::vec3(1.0f, 0.0f, 0.0f));
-                location = glGetUniformLocation(shaderProgram, "model");
-                glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawArrays(GL_LINES, 0 ,2);
-            }
-        }
-        glBindVertexArray(VAO_v);
-        for (int r = 0; r < rows; r++)
-        {
-            glm::vec3 start = glm::vec3(-7.5f, 3+3.5f - r, 0.0f);
-            for (int c = 0; c < cols+1; c++)
-            {
-                glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c * glm::vec3(1.0f, 0.0f, 0.0f));
-                location = glGetUniformLocation(shaderProgram, "model");
-                glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawArrays(GL_LINES, 0, 2);
-            }
-        }
+        maze.draw(shaderProgram, VAO_h, VAO_v);
+        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

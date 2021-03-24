@@ -18,7 +18,7 @@ Maze::Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row
 }
 
 int root(int cell, int parent[])
-{ 
+{
     int node = cell;
     while(node!=parent[node])
         node = parent[node];
@@ -49,8 +49,8 @@ void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
         if((*i).second == 0)
         {
             pi wall = (*i).first;
-            int cell1 = this->rows*(wall.first-1)+wall.second;
-            int cell2 = cell1+this->rows;
+            int cell1 = this->cols*(wall.first-1)+wall.second;
+            int cell2 = cell1+this->cols;
             int root1 = root(cell1, parent);
             int root2 = root(cell2, parent);
             if(root1 != root2)
@@ -62,7 +62,7 @@ void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
         else
         {
             pi wall = (*i).first;
-            int cell1 = this->rows*wall.first + wall.second-1;
+            int cell1 = this->cols*wall.first + wall.second-1;
             int cell2 = cell1 + 1;
             int root1 = root(cell1, parent);
             int root2 = root(cell2, parent);

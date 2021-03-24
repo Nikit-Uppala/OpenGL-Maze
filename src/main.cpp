@@ -6,7 +6,7 @@ const unsigned int width = 1280;
 const unsigned int height = 720;
 const float ascpectRatio = (float)width/height;
 int rows = 7;
-int cols = 7;
+int cols = 5;
 
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 position;\n"
@@ -39,6 +39,7 @@ Line vertical(vertices_v);
 
 glm::vec3 row_gap(1.0f, 0.0f, 0.0f);
 glm::vec3 col_gap(0.0f, 1.0f, 0.0f);
+glm::vec3 row_start();
 
 Maze maze(rows, cols, row_gap, col_gap, row_gap, col_gap, glm::vec3(2.0f, 2.0f, 0.0f));
 
@@ -58,6 +59,11 @@ GLFWwindow* createWindow()
 void resize_callback(GLFWwindow* window, int w, int h)
 {
     glViewport(0, 0, w, h);
+}
+
+void input(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    std::cout << (char)key << " " << action << std::endl;
 }
 
 unsigned int createShader(const char* source, int type)
@@ -118,6 +124,7 @@ int main()
     }
     glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(window, resize_callback);
+    glfwSetKeyCallback(window, input);
 
     unsigned int VAO_h, VBO_h;
     horizontal.bindData(VAO_h, VBO_h);
@@ -128,16 +135,16 @@ int main()
     unsigned int shaderProgram = createProgram();
     glUseProgram(shaderProgram);
 
-    glm::mat4 projection = glm::ortho(-8.0f*2, 8.0f*2, -4.5f*2, 4.5f*2, -1.0f, 1.0f);
+    glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
     int location = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.5f));
+    glm::mat4 view = glm::mat4(1.0f);
     location = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+    glEnable(GL_DEPTH_TEST);
     while(!glfwWindowShouldClose(window))
     {
-        glClear(GL_COLOR_BUFFER_BIT);
-
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         maze.draw(shaderProgram, VAO_h, VAO_v);
         
         glfwSwapBuffers(window);

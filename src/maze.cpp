@@ -1,5 +1,6 @@
 #include "maze.h"
 #include<algorithm>
+#include<random>
 #include<time.h>
 
 Maze::Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row_gap, glm::vec3 col_gap, glm::vec3 scale)
@@ -16,33 +17,75 @@ Maze::Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row
             included[i][j][0] = 1, included[i][j][1] = 1;
 }
 
-void root(int r, int c, int *parent[])
+int root(int cell, int parent[])
 { 
+    int node = cell;
+    while(node!=parent[node])
+        node = parent[node];
+    parent[cell] = node;
+    return node;
+}
+void make_union(int p1, int p2, int parent[], int Size[])
+{
+    if(Size[p1]>=Size[p2])
+    {
+        Size[p1] += Size[parent[p2]];
+        parent[p2] = parent[p1];
+    }
+    else
+    {
+        Size[p2] += Size[parent[p1]];
+        parent[p1] = parent[p2];
+    }
 }
 
 void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
 {
-    int parent[this->rows][this->cols], count_size[this->rows][this->cols], start=0;
-    for(int r=0; r<this->rows; r++)
-        for(int c=0; c<this->cols; c++) parent[r][c] = start++, count_size[r][c] = 1;
-    
+    int totalCells = this->rows*this->cols;
+    int parent[totalCells], Size[totalCells];
+    for(int i=0; i<totalCells; i++) parent[i]=i, Size[i]=1;
+    for(auto i=walls.begin(); i!=walls.end(); i+=1)
+    {
+        if((*i).second == 0)
+        {
+            pi wall = (*i).first;
+            int cell1 = this->rows*(wall.first-1)+wall.second;
+            int cell2 = cell1+this->rows;
+            int root1 = root(cell1, parent);
+            int root2 = root(cell2, parent);
+            if(root1 != root2)
+            {
+                this->included[wall.first][wall.second][0] = 0;
+                make_union(root1, root2, parent, Size);
+            }
+        }
+        else
+        {
+            pi wall = (*i).first;
+            int cell1 = this->rows*wall.first + wall.second-1;
+            int cell2 = cell1 + 1;
+            int root1 = root(cell1, parent);
+            int root2 = root(cell2, parent);
+            if (root1 != root2)
+            {
+                this->included[wall.first][wall.second][1] = 0;
+                make_union(root1, root2, parent, Size);
+            }
+        }
+    }
 }
 
 void Maze::generate_maze()
 {
-    // srand(time(0));
-    // std::vector<std::pair<pi, int>> walls;
-    // for(int r=1; r<this->rows; r++)
-    //     for(int c=0; c<this->cols; c++)
-    //         walls.std::push(mp(mp(r, c), 0));
-    // for(int r = 1; r < this->rows; r++)
-    //     for(int c = 0; c < this->cols; c++)
-    //         walls.std::push(mp(mp(r, c), 0));
-    // for(int r=0; r < this->rows; r++)
-    //     for(int c=1; c<this->cols; c++)
-    //         walls.std::push(mp(mp(r, c), 1));
-    // std::shuffle(walls.std::begin(), walls.std::end(), default_random_engine(time(0)));
-    // kruskal(walls);
+    std::vector<std::pair<pi, int>> walls;
+    for(int r = 1; r < this->rows; r++)
+        for(int c = 0; c < this->cols; c++)
+            walls.push_back(mp(mp(r, c), 0));
+    for(int r=0; r < this->rows; r++)
+        for(int c=1; c<this->cols; c++)
+            walls.push_back(mp(mp(r, c), 1));
+    std::shuffle(walls.begin(), walls.end(), std::default_random_engine(time(0)));
+    kruskal(walls);
 }
 
 void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO_v)
@@ -53,6 +96,7 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
         glm::vec3 start = glm::vec3(-7.0f, 3 + 4.0f - r*this->scale[0], 0.0f);
         for (int c = 0; c < cols; c++)
         {
+            if(!this->included[r][c][0]) continue;
             glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->row_gap*this->scale);
             model = glm::scale(model, this->scale);
             int location = glGetUniformLocation(shaderProgram, "model");
@@ -66,6 +110,7 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
         glm::vec3 start = glm::vec3(-8.0f, 3 + 3.0f - r*this->scale[0], 0.0f);
         for (int c = 0; c < cols + 1; c++)
         {
+            if(!this->included[r][c][1]) continue;
             glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->row_gap*this->scale);
             model = glm::scale(model, this->scale);
             int location = glGetUniformLocation(shaderProgram, "model");

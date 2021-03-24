@@ -123,6 +123,7 @@ int main()
     horizontal.bindData(VAO_h, VBO_h);
     unsigned int VAO_v, VBO_v;
     vertical.bindData(VAO_v, VBO_v);
+    maze.generate_maze();
 
     unsigned int shaderProgram = createProgram();
     glUseProgram(shaderProgram);

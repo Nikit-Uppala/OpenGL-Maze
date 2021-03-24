@@ -1,7 +1,11 @@
 #include "main.h"
+#include "line.h"
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
+const float ascpectRatio = (float)width/height;
+int rows = 7;
+int cols = 7;
 
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 position;\n"
@@ -19,6 +23,18 @@ const char *fragmentShaderSource = "#version 330 core\n"
                                    "{\n"
                                    "FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
                                    "}\n";
+
+float vertices_h[] = {
+    -0.5f, 0.0f, 0.0f,
+     0.5f, 0.0f, 0.0f
+};
+Line horizontal(vertices_h);
+
+float vertices_v[] = {
+    0.0f, -0.5f, 0.0f,
+    0.0f,  0.5f, 0.0f
+};
+Line vertical(vertices_v);
 
 GLFWwindow* createWindow()
 {
@@ -59,8 +75,6 @@ unsigned int createProgram()
     unsigned int vertexShader = createShader(vertexShaderSource, GL_VERTEX_SHADER);
     unsigned int fragmentShader = createShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
     unsigned int program = glCreateProgram();
-    std::cout << "Vertex Shader is " << vertexShader << "\n";
-    std::cout << "Fragment shader is " << fragmentShader << "\n";
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
     glValidateProgram(program);
@@ -99,13 +113,48 @@ int main()
     glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(window, resize_callback);
 
+    unsigned int VAO_h, VBO_h;
+    horizontal.bindData(VAO_h, VBO_h);
+    unsigned int VAO_v, VBO_v;
+    vertical.bindData(VAO_v, VBO_v);
+
     unsigned int shaderProgram = createProgram();
     glUseProgram(shaderProgram);
+
+    glm::mat4 projection = glm::ortho(-8.0f*2, 8.0f*2, -4.5f*2, 4.5f*2, -1.0f, 1.0f);
+    int location = glGetUniformLocation(shaderProgram, "projection");
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.5f));
+    location = glGetUniformLocation(shaderProgram, "view");
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
     while(!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-
+        glBindVertexArray(VAO_h);
+        for(int r=0; r < rows+1; r++)
+        {
+            glm::vec3 start = glm::vec3(-7.0f, 3+4.0f-r, 0.0f);
+            for(int c=0; c < cols; c++)
+            {
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*glm::vec3(1.0f, 0.0f, 0.0f));
+                location = glGetUniformLocation(shaderProgram, "model");
+                glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
+                glDrawArrays(GL_LINES, 0 ,2);
+            }
+        }
+        glBindVertexArray(VAO_v);
+        for (int r = 0; r < rows; r++)
+        {
+            glm::vec3 start = glm::vec3(-7.5f, 3+3.5f - r, 0.0f);
+            for (int c = 0; c < cols+1; c++)
+            {
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c * glm::vec3(1.0f, 0.0f, 0.0f));
+                location = glGetUniformLocation(shaderProgram, "model");
+                glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
+                glDrawArrays(GL_LINES, 0, 2);
+            }
+        }
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

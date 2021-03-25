@@ -92,6 +92,8 @@ void Maze::generate_maze()
 
 void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO_v)
 {
+    int location = glGetUniformLocation(shaderProgram, "color");
+    glUniform3f(location, 1.0f, 1.0f, 1.0f);
     glBindVertexArray(VAO_h);
     for (int r = 0; r < rows + 1; r++)
     {
@@ -101,7 +103,7 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
             if(!this->included[r][c][0]) continue;
             glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->col_gap*this->scale);
             model = glm::scale(model, this->scale);
-            int location = glGetUniformLocation(shaderProgram, "model");
+            location = glGetUniformLocation(shaderProgram, "model");
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
             glDrawArrays(GL_LINES, 0, 2);
         }

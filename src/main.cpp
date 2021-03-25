@@ -20,11 +20,12 @@ const char *vertexShaderSource = "#version 330 core\n"
                                  "}\n";
 
 const char *fragmentShaderSource = "#version 330 core\n"
-                                   "out vec4 FragColor;\n"
-                                   "void main()\n"
-                                   "{\n"
-                                   "FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
-                                   "}\n";
+                                "out vec4 FragColor;\n"
+                                "uniform vec3 color;\n"
+                                "void main()\n"
+                                "{\n"
+                                "FragColor = vec4(color, 1.0f);\n"
+                                "}\n";
 
 float vertices_h[] = {
     -0.5f, 0.0f, 0.0f,
@@ -68,7 +69,7 @@ void resize_callback(GLFWwindow* window, int w, int h)
 
 void input(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if(action == 1 || action == 2)
+    if(action == 1)
     {
         switch(key)
         {
@@ -145,8 +146,8 @@ int main()
     unsigned int VAO_v, VBO_v;
     vertical.bindData(VAO_v, VBO_v);
     maze.generate_maze();
-    unsigned int VAO, VBO, IBO;
-    player.bindData(VAO, VBO, IBO);
+    unsigned int VAO[6], VBO[6];
+    player.bindData(VAO, VBO);
 
     unsigned int shaderProgram = createProgram();
     glUseProgram(shaderProgram);

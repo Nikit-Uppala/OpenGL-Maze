@@ -41,7 +41,7 @@ void make_union(int p1, int p2, int parent[], int Size[])
     }
 }
 
-void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
+void Maze::kruskal(std::vector<std::pair<pi, int>>walls, std::vector<int>graph[])
 {
     int totalCells = this->rows*this->cols;
     int parent[totalCells], Size[totalCells];
@@ -57,6 +57,8 @@ void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
             int root2 = root(cell2, parent);
             if(root1 != root2)
             {
+                graph[cell1].push_back(cell2);
+                graph[cell2].push_back(cell1);
                 this->included[wall.first][wall.second][0] = 0;
                 make_union(root1, root2, parent, Size);
             }
@@ -70,6 +72,8 @@ void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
             int root2 = root(cell2, parent);
             if (root1 != root2)
             {
+                graph[cell1].push_back(cell2);
+                graph[cell2].push_back(cell1);
                 this->included[wall.first][wall.second][1] = 0;
                 make_union(root1, root2, parent, Size);
             }
@@ -77,7 +81,7 @@ void Maze::kruskal(std::vector<std::pair<pi, int>>walls)
     }
 }
 
-void Maze::generate_maze()
+void Maze::generate_maze(std::vector<int>graph[])
 {
     std::vector<std::pair<pi, int>> walls;
     for(int r = 1; r < this->rows; r++)
@@ -87,11 +91,12 @@ void Maze::generate_maze()
         for(int c=1; c<this->cols; c++)
             walls.push_back(mp(mp(r, c), 1));
     std::shuffle(walls.begin(), walls.end(), std::default_random_engine(time(0)));
-    kruskal(walls);
+    kruskal(walls, graph);
 }
 
 void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO_v)
 {
+    glLineWidth(10.0f);
     int location = glGetUniformLocation(shaderProgram, "color");
     glUniform3f(location, 1.0f, 1.0f, 1.0f);
     glBindVertexArray(VAO_h);

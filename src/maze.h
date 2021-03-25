@@ -12,7 +12,7 @@ class Maze
     public:
         Maze() {}
         Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row_gap, glm::vec3 col_gap, glm::vec3 scale);
-        void generate_maze();
+        void generate_maze(std::vector<int>graph[]);
         void draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned VAO_v);
         bool included[50][50][2];
     private:
@@ -20,5 +20,5 @@ class Maze
         glm::vec3 row_start, col_start;
         glm::vec3 row_gap, col_gap;
         glm::vec3 scale;
-        void kruskal(std::vector<std::pair<pi, int>>walls);
+        void kruskal(std::vector<std::pair<pi, int>>walls, std::vector<int>graph[]);
 };

@@ -1,6 +1,7 @@
 #include "player.h"
 
-Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, glm::vec3 col_gap)
+Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, glm::vec3 col_gap, 
+    glm::vec3 scaling, glm::vec3 color)
 {
     this->row = r;
     this->col = c;
@@ -9,6 +10,8 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
     this->origin = origin;
     this->row_gap = row_gap;
     this->col_gap = col_gap;
+    this->scaling = scaling;
+    this->color = color;
     float a = 0.30f;
     float b = 0.15f;
     float angle = 5.0f;
@@ -45,7 +48,7 @@ void Player::draw(unsigned int shaderProgram, unsigned int VAO[])
     glm::mat4 model(1.0f);
     glm::vec3 position = this->origin - (float)this->row*this->row_gap + (float)this->col*this->col_gap;
     model = glm::translate(model, position);
-    model = glm::scale(model, glm::vec3(1.2f, 1.2f, 0.0f));
+    model = glm::scale(model, this->scaling);
     switch(this->orientation)
     {
         case 1: model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); break;
@@ -58,7 +61,7 @@ void Player::draw(unsigned int shaderProgram, unsigned int VAO[])
     {
         location = glGetUniformLocation(shaderProgram, "color");
         if(i == 0) glUniform3f(location, 0.3f, 0.3f, 0.6f);
-        else glUniform3f(location, 0.0f, 1.0f, 0.0f);
+        else glUniform3f(location, this->color[0], this->color[1], this->color[2]);
         glBindVertexArray(VAO[i]);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
     }

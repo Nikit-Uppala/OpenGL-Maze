@@ -15,6 +15,8 @@ Maze::Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row
     for(int i=0; i<=rows; i++)
         for(int j=0; j<=cols; j++)
             included[i][j][0] = 1, included[i][j][1] = 1;
+    included[0][0][1] = 0;
+    included[rows-1][cols][1] = 0;
 }
 
 int root(int cell, int parent[])
@@ -93,11 +95,11 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
     glBindVertexArray(VAO_h);
     for (int r = 0; r < rows + 1; r++)
     {
-        glm::vec3 start = glm::vec3(-7.0f, 3 + 4.0f - r*this->scale[0], 0.0f);
+        glm::vec3 start = this->row_start - (float)r*this->scale * this->row_gap;
         for (int c = 0; c < cols; c++)
         {
             if(!this->included[r][c][0]) continue;
-            glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->row_gap*this->scale);
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->col_gap*this->scale);
             model = glm::scale(model, this->scale);
             int location = glGetUniformLocation(shaderProgram, "model");
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
@@ -107,11 +109,11 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
     glBindVertexArray(VAO_v);
     for (int r = 0; r < rows; r++)
     {
-        glm::vec3 start = glm::vec3(-8.0f, 3 + 3.0f - r*this->scale[0], 0.0f);
+        glm::vec3 start = this->col_start - (float)r*this->scale*this->row_gap;
         for (int c = 0; c < cols + 1; c++)
         {
             if(!this->included[r][c][1]) continue;
-            glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->row_gap*this->scale);
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), start + (float)c*this->col_gap*this->scale);
             model = glm::scale(model, this->scale);
             int location = glGetUniformLocation(shaderProgram, "model");
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));

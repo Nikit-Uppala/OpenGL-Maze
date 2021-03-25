@@ -1,12 +1,13 @@
 #include "main.h"
 #include "line.h"
 #include "maze.h"
+#include "player.h"
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
 const float ascpectRatio = (float)width/height;
 int rows = 7;
-int cols = 5;
+int cols = 15;
 
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 position;\n"
@@ -37,11 +38,15 @@ float vertices_v[] = {
 };
 Line vertical(vertices_v);
 
-glm::vec3 row_gap(1.0f, 0.0f, 0.0f);
-glm::vec3 col_gap(0.0f, 1.0f, 0.0f);
-glm::vec3 row_start();
+glm::vec3 row_gap(0.0f, 1.0f, 0.0f);
+glm::vec3 col_gap(1.0f, 0.0f, 0.0f);
+glm::vec3 row_start(-14.0f, 5.5f, 0.0f);
+glm::vec3 scaling(2.0f, 2.0f, 0.0f);
+glm::vec3 col_start = row_start - scaling/2.0f*row_gap - scaling/2.0f*col_gap;
+glm::vec3 origin(row_start[0], col_start[1], 0.0f);
+Player player(0, 0, 100, origin, scaling*row_gap, scaling*col_gap);
 
-Maze maze(rows, cols, row_gap, col_gap, row_gap, col_gap, glm::vec3(2.0f, 2.0f, 0.0f));
+Maze maze(rows, cols, row_start, col_start, row_gap, col_gap, scaling);
 
 GLFWwindow* createWindow()
 {
@@ -63,7 +68,16 @@ void resize_callback(GLFWwindow* window, int w, int h)
 
 void input(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    std::cout << (char)key << " " << action << std::endl;
+    if(action == 1 || action == 2)
+    {
+        switch(key)
+        {
+            case 'W': player.move_row(-1, !maze.included[player.row][player.col][0]); break;
+            case 'S': player.move_row( 1, !maze.included[player.row+1][player.col][0]); break;
+            case 'A': player.move_col(-1, !maze.included[player.row][player.col][1]); break;
+            case 'D': player.move_col( 1, !maze.included[player.row][player.col+1][1]); break;
+        }
+    }
 }
 
 unsigned int createShader(const char* source, int type)
@@ -131,6 +145,8 @@ int main()
     unsigned int VAO_v, VBO_v;
     vertical.bindData(VAO_v, VBO_v);
     maze.generate_maze();
+    unsigned int VAO, VBO, IBO;
+    player.bindData(VAO, VBO, IBO);
 
     unsigned int shaderProgram = createProgram();
     glUseProgram(shaderProgram);
@@ -146,7 +162,7 @@ int main()
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         maze.draw(shaderProgram, VAO_h, VAO_v);
-        
+        player.draw(shaderProgram, VAO);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

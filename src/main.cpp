@@ -6,6 +6,7 @@
 #include<stdlib.h>
 #include "imposter.h"
 #include<vector>
+#include "timer.h"
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
@@ -50,6 +51,8 @@ glm::vec3 scaling(2.0f, 2.0f, 0.0f);
 glm::vec3 col_start = row_start - scaling/2.0f*row_gap - scaling/2.0f*col_gap;
 glm::vec3 origin(row_start[0], col_start[1], 0.0f);
 glm::vec3 character_scaling(1.3f, 1.3f, 0.0f);
+
+Timer t(1/60.0f);
 
 Player player(0, 0, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, row_gap);
 Imposter imposter(rand()%rows, rand()%cols, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, col_gap);
@@ -170,13 +173,20 @@ int main()
     location = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
     glEnable(GL_DEPTH_TEST);
+    int prev_move = 0;
     while(!glfwWindowShouldClose(window))
     {
+        if(!t.process_tick()) continue;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         background.display(shaderProgram, VAO_bg);
         maze.draw(shaderProgram, VAO_h, VAO_v);
         player.draw(shaderProgram, VAO);
         imposter.draw(shaderProgram, VAO);
+        if((int)glfwGetTime()-prev_move > 0)
+        {
+            prev_move += 2;
+            imposter.move(graph, rows, cols, player.row, player.col);
+        }
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

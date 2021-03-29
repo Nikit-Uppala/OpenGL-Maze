@@ -86,19 +86,19 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
         switch(key)
         {
             case 'W':
-                if(!player.moveRow)
+                if(!player.moveRow && !player.moveCol)
                     player.moveRow = -1;
                 break;
             case 'S':
-                if(!player.moveRow)
+                if(!player.moveRow && !player.moveCol)
                     player.moveRow =  1;
                 break;
             case 'A':
-                if(!player.moveCol)
+                if(!player.moveCol && !player.moveRow)
                     player.moveCol = -1;
                 break;
             case 'D':
-                if(!player.moveCol)
+                if(!player.moveCol && !player.moveRow)
                     player.moveCol =  1;
                 break;
         }

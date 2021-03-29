@@ -85,10 +85,22 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         switch(key)
         {
-            case 'W': player.move_row(-1, !maze.included[player.row][player.col][0]); break;
-            case 'S': player.move_row( 1, !maze.included[player.row+1][player.col][0]); break;
-            case 'A': player.move_col(-1, !maze.included[player.row][player.col][1]); break;
-            case 'D': player.move_col( 1, !maze.included[player.row][player.col+1][1]); break;
+            case 'W':
+                if(!player.moveRow)
+                    player.moveRow = -1;
+                break;
+            case 'S':
+                if(!player.moveRow)
+                    player.moveRow =  1;
+                break;
+            case 'A':
+                if(!player.moveCol)
+                    player.moveCol = -1;
+                break;
+            case 'D':
+                if(!player.moveCol)
+                    player.moveCol =  1;
+                break;
         }
     }
 }
@@ -182,10 +194,14 @@ int main()
         maze.draw(shaderProgram, VAO_h, VAO_v);
         player.draw(shaderProgram, VAO);
         imposter.draw(shaderProgram, VAO);
+        if(player.moveCol != 0)
+            player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
+        else if(player.moveRow != 0)
+            player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
         if((int)glfwGetTime()-prev_move > 0)
         {
             prev_move += 2;
-            imposter.move(graph, rows, cols, player.row, player.col);
+            // imposter.move(graph, rows, cols, player.row, player.col);
         }
         glfwSwapBuffers(window);
         glfwPollEvents();

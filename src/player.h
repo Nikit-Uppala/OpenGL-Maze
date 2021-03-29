@@ -39,7 +39,7 @@ class Player
         }
     };
     float curved_face[114];
-    
+    int numFrames = 8;
     public:
         Player() {}
         Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, glm::vec3 col_gap, 
@@ -49,12 +49,16 @@ class Player
         void draw(unsigned int shaderProgram, unsigned int VAO[]);
         void bindData(unsigned int VAO[], unsigned int VBO[]);
         int row, col;
+        int frames;
+        int moveCol;
+        int moveRow;
     private:
         glm::vec3 origin;
         glm::vec3 row_gap;
         glm::vec3 col_gap;
         glm::vec3 scaling;
         glm::vec3 color;
+        glm::vec3 position;
         float health;
         int orientation;
 };

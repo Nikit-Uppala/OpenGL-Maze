@@ -8,10 +8,12 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
     this->health = health;
     this->orientation = 0;
     this->origin = origin;
+    this->position = origin;
     this->row_gap = row_gap;
     this->col_gap = col_gap;
     this->scaling = scaling;
     this->color = color;
+    this->frames = 0;
     float a = 0.30f;
     float b = 0.15f;
     float angle = 5.0f;
@@ -28,17 +30,40 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
 
 void Player::move_row(int sign, bool canMove)
 {
-    if(!canMove) return;
-    this->row += sign;
+    if(!canMove || this->row + sign < 0)
+    {
+        this->moveRow = 0;
+        this->frames = 0;
+        return;
+    }
+    this->frames++;
+    this->position += this->row_gap*(float)-sign/(float)Player::numFrames;
+    if(frames>=Player::numFrames)
+    {
+        this->row += sign;
+        this->moveRow = 0;
+        this->frames = 0;
+    }
     if(sign == 1) this->orientation = 2;
     else this->orientation = 3;
 }
 
 void Player::move_col(int sign, bool canMove)
 {
-    if(!canMove) return;
-    if(this->col + sign >= 0)
+    if(!canMove || this->col + sign < 0)
+    {
+        this->moveCol = 0;
+        this->frames = 0;
+        return;
+    }
+    this->frames++;
+    this->position += this->col_gap*(float)sign/(float)Player::numFrames;
+    if(frames>=Player::numFrames)
+    {
         this->col += sign;
+        this->moveCol = 0;
+        this->frames = 0;
+    }
     if(sign == 1) this->orientation = 0;
     else this->orientation = 1;
 }
@@ -47,7 +72,7 @@ void Player::draw(unsigned int shaderProgram, unsigned int VAO[])
 {
     glm::mat4 model(1.0f);
     glm::vec3 position = this->origin - (float)this->row*this->row_gap + (float)this->col*this->col_gap;
-    model = glm::translate(model, position);
+    model = glm::translate(model, this->position);
     model = glm::scale(model, this->scaling);
     switch(this->orientation)
     {

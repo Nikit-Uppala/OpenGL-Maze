@@ -8,12 +8,14 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
     this->health = health;
     this->orientation = 0;
     this->origin = origin;
-    this->position = origin;
+    this->position = origin - (float)r*row_gap + (float)c*col_gap;
     this->row_gap = row_gap;
     this->col_gap = col_gap;
     this->scaling = scaling;
     this->color = color;
     this->frames = 0;
+    this->moveCol = 0;
+    this->moveRow = 0;
     float a = 0.30f;
     float b = 0.15f;
     float angle = 5.0f;

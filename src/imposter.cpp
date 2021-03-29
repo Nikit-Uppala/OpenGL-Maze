@@ -25,6 +25,12 @@ void Imposter::move(std::vector<int>graph[], int rows, int cols, int row_t, int 
         target_cell = this->parent[target_cell];
     int target_row = target_cell/cols;
     int target_col = target_cell%cols;
-    if(this->row == target_row) move_col(target_col-this->col, 1);
-    else move_row(target_row-this->row, 1);
+    if(this->row == target_row)
+    {
+        if(!this->moveCol) this->moveCol = target_col - this->col;
+    }
+    else 
+    {
+        if(!this->moveRow) this->moveRow = target_row - this->row;
+    }
 }

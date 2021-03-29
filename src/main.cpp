@@ -198,10 +198,14 @@ int main()
             player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
         else if(player.moveRow != 0)
             player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
+        if(imposter.moveCol != 0)
+            imposter.move_col(imposter.moveCol, 1);
+        else if(imposter.moveRow != 0)
+            imposter.move_row(imposter.moveRow, 1);
         if((int)glfwGetTime()-prev_move > 0)
         {
-            prev_move += 2;
-            // imposter.move(graph, rows, cols, player.row, player.col);
+            prev_move += 1;
+            imposter.move(graph, rows, cols, player.row, player.col);
         }
         glfwSwapBuffers(window);
         glfwPollEvents();

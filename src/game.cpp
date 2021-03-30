@@ -70,5 +70,8 @@ void Game::check_btn_press(int row, int col, int rows, int cols)
         this->tasks_completed += 1;
     }
     else if(player_cell == pow_cell && !this->power_ups_released)
+    {
         this->tasks_completed += 1;
+        this->power_ups_released = 1;
+    }
 }

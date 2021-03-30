@@ -36,12 +36,22 @@ const char *fragmentShaderSource = "#version 330 core\n"
                                 "FragColor = vec4(color, 1.0f);\n"
                                 "}\n";
 
-const char* lightingShaderSource = "#version 330 core\n"
-                                "out vec4 FragColor;\n"
-                                "in vec3 FragPos;\n"
-                                "uniform vec3 color;\n"
-                                "uniform vec3 lightPos;\n"
-                                "uniform vec3 viewPos;\n";
+const char* lightingFragmentShaderSource = "#version 330 core\n"
+                                        "out vec4 FragColor;\n"
+                                        "in vec3 FragPos;\n"
+                                        "uniform vec3 color;\n"
+                                        "uniform vec3 lightPos;\n"
+                                        "uniform vec3 viewPos;\n"
+                                        "void main()\n"
+                                        "{\n"
+                                        "float specularStrength = 1.0f;\n"
+                                        "vec3 lightDirection = normalize(lightPos-FragPos);\n"
+                                        "vec3 reflectDir = reflect(-lightDirection, vec3(0.0f, 0.0f, 1.0f));\n"
+                                        "vec3 viewDir = normalize(viewPos - FragPos);\n"
+                                        "float intensity = pow(max(dot(viewDir, reflectDir), 0.0f), 2.6f);\n"
+                                        "vec3 effect = specularStrength*intensity*vec3(1.0f, 1.0f, 1.0f);\n"
+                                        "FragColor = vec4(effect * color, 1.0f);\n"
+                                        "}\n";
 
 float vertices_h[] = {
     -0.5f, 0.0f, 0.0f,
@@ -72,6 +82,7 @@ Maze maze(rows, cols, row_start, col_start, row_gap, col_gap, scaling);
 std::vector<int>graph[151];
 Game game(rows, cols);
 Background background(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(cols*2.0f, rows*2.0f, 0.0f), glm::vec3(0.0f, -1.5f, -0.5f));
+unsigned int currentShader, shaderProgram, lightProgram;
 
 GLFWwindow* createWindow()
 {
@@ -97,7 +108,11 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         switch(key)
         {
-            case 'L': game.lighting = !game.lighting; break;
+            case 'L': 
+                game.lighting = !game.lighting;
+                if(game.lighting) glUseProgram(shaderProgram);
+                else glUseProgram(lightProgram); 
+                break;
             case 'W':
                 if(!player.moveRow && !player.moveCol)
                     player.moveRow = -1;
@@ -193,8 +208,10 @@ int main()
     unsigned int VAO_btn;
     game.bindData(VAO_btn);
 
-    unsigned int shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
-    glUseProgram(shaderProgram);
+    shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
+    lightProgram = createProgram(vertexShaderSource, lightingFragmentShaderSource);
+    currentShader = shaderProgram;
+    glUseProgram(currentShader);
 
     glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
     int location = glGetUniformLocation(shaderProgram, "projection");
@@ -207,19 +224,37 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         if(!t.process_tick()) continue;
-        game.decrease_timer();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        background.display(shaderProgram, VAO_bg);
-        maze.draw(shaderProgram, VAO_h, VAO_v);
-        game.draw(shaderProgram, VAO_btn, origin, row_gap*scaling, scaling*col_gap);
-        player.draw(shaderProgram, VAO);
+        game.decrease_timer();
+        if(game.lighting)
+        {
+            currentShader = shaderProgram;
+        }
+        else
+        {
+            currentShader = lightProgram;
+            location = glGetUniformLocation(lightProgram, "projection");
+            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
+            location = glGetUniformLocation(lightProgram, "view");
+            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+            location = glGetUniformLocation(lightProgram, "viewPos");
+            glm::vec3 position = origin - (float)player.row*row_gap*scaling + (float)player.col*col_gap*scaling;
+            glUniform3f(location, position[0], position[1], 2.0f);
+            location = glGetUniformLocation(lightProgram, "lightPos");
+            glUniform3f(location, position[0], position[1], 1.0f);
+        }
+        background.display(currentShader, VAO_bg);
+        maze.draw(currentShader, VAO_h, VAO_v);
+        game.draw(currentShader, VAO_btn, origin, row_gap*scaling, scaling*col_gap);
+        player.draw(currentShader, VAO);
         if(game.imposter_alive)
-            imposter.draw(shaderProgram, VAO);
+            imposter.draw(currentShader, VAO);
         if(player.moveCol != 0)
             player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
         else if(player.moveRow != 0)
             player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
         game.check_btn_press(player.row, player.col, rows, cols);
+        if(player.col == cols) break;
         if(game.imposter_alive)
         {
             if(imposter.moveCol != 0)

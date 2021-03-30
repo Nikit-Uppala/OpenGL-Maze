@@ -14,9 +14,8 @@ Maze::Maze(int r, int c, glm::vec3 row_start, glm::vec3 col_start, glm::vec3 row
     this -> scale = scale;
     for(int i=0; i<=rows; i++)
         for(int j=0; j<=cols; j++)
-            included[i][j][0] = 1, included[i][j][1] = 1;
-    included[0][0][1] = 0;
-    included[rows-1][cols][1] = 0;
+            this->included[i][j][0] = 1, this->included[i][j][1] = 1;
+    this->included[0][0][1] = 0;
 }
 
 int root(int cell, int parent[])
@@ -127,4 +126,8 @@ void Maze::draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned int VAO
             glDrawArrays(GL_LINES, 0, 2);
         }
     }
+}
+void Maze::open_exit()
+{
+    this->included[this->rows-1][this->cols][1] = 0;
 }

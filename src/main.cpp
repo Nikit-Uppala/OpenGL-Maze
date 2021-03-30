@@ -4,9 +4,11 @@
 // #include "player.h"
 #include "background.h"
 #include<stdlib.h>
+#include<time.h>
 #include "imposter.h"
 #include<vector>
 #include "timer.h"
+#include "game.h"
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
@@ -19,8 +21,10 @@ const char *vertexShaderSource = "#version 330 core\n"
                                  "uniform mat4 model\n;"
                                  "uniform mat4 view;\n"
                                  "uniform mat4 projection;\n"
+                                 "out vec3 FragPos;\n"
                                  "void main()\n"
                                  "{\n"
+                                 "FragPos = vec3(model * vec4(position, 1.0f));\n"
                                  "gl_Position = projection * view * model * vec4(position, 1.0f);\n"
                                  "}\n";
 
@@ -31,6 +35,13 @@ const char *fragmentShaderSource = "#version 330 core\n"
                                 "{\n"
                                 "FragColor = vec4(color, 1.0f);\n"
                                 "}\n";
+
+const char* lightingShaderSource = "#version 330 core\n"
+                                "out vec4 FragColor;\n"
+                                "in vec3 FragPos;\n"
+                                "uniform vec3 color;\n"
+                                "uniform vec3 lightPos;\n"
+                                "uniform vec3 viewPos;\n";
 
 float vertices_h[] = {
     -0.5f, 0.0f, 0.0f,
@@ -55,10 +66,11 @@ glm::vec3 character_scaling(1.3f, 1.3f, 0.0f);
 Timer t(1/60.0f);
 
 Player player(0, 0, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, row_gap);
-Imposter imposter(rand()%rows, rand()%cols, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, col_gap);
+Imposter imposter;
 
 Maze maze(rows, cols, row_start, col_start, row_gap, col_gap, scaling);
 std::vector<int>graph[151];
+Game game(rows, cols);
 Background background(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(cols*2.0f, rows*2.0f, 0.0f), glm::vec3(0.0f, -1.5f, -0.5f));
 
 GLFWwindow* createWindow()
@@ -85,6 +97,7 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         switch(key)
         {
+            case 'L': game.lighting = !game.lighting; break;
             case 'W':
                 if(!player.moveRow && !player.moveCol)
                     player.moveRow = -1;
@@ -121,7 +134,7 @@ unsigned int createShader(const char* source, int type)
     return shader;
 }
 
-unsigned int createProgram()
+unsigned int createProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
 {
     unsigned int vertexShader = createShader(vertexShaderSource, GL_VERTEX_SHADER);
     unsigned int fragmentShader = createShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
@@ -141,6 +154,8 @@ unsigned int createProgram()
 
 int main()
 {
+    srand(time(0));
+    imposter = Imposter(rand()%rows, rand()%cols, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, col_gap);
     if(!glfwInit())
     {
         std::cout << "Failed to initialize GLFW\n";
@@ -162,6 +177,7 @@ int main()
         return -1;
     }
     glViewport(0, 0, width, height);
+    // Setting callbacks for window resize and keyboard events
     glfwSetFramebufferSizeCallback(window, resize_callback);
     glfwSetKeyCallback(window, input);
 
@@ -174,8 +190,10 @@ int main()
     player.bindData(VAO, VBO);
     unsigned int VAO_bg, VBO_bg;
     background.bindData(VAO_bg, VBO_bg);
+    unsigned int VAO_btn;
+    game.bindData(VAO_btn);
 
-    unsigned int shaderProgram = createProgram();
+    unsigned int shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
     glUseProgram(shaderProgram);
 
     glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
@@ -189,24 +207,32 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         if(!t.process_tick()) continue;
+        game.decrease_timer();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         background.display(shaderProgram, VAO_bg);
         maze.draw(shaderProgram, VAO_h, VAO_v);
+        game.draw(shaderProgram, VAO_btn, origin, row_gap*scaling, scaling*col_gap);
         player.draw(shaderProgram, VAO);
-        imposter.draw(shaderProgram, VAO);
+        if(game.imposter_alive)
+            imposter.draw(shaderProgram, VAO);
         if(player.moveCol != 0)
             player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
         else if(player.moveRow != 0)
             player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
-        if(imposter.moveCol != 0)
-            imposter.move_col(imposter.moveCol, 1);
-        else if(imposter.moveRow != 0)
-            imposter.move_row(imposter.moveRow, 1);
-        if((int)glfwGetTime()-prev_move > 0)
+        game.check_btn_press(player.row, player.col, rows, cols);
+        if(game.imposter_alive)
         {
-            prev_move += 1;
-            imposter.move(graph, rows, cols, player.row, player.col);
+            if(imposter.moveCol != 0)
+                imposter.move_col(imposter.moveCol, 1);
+            else if(imposter.moveRow != 0)
+                imposter.move_row(imposter.moveRow, 1);
+            if((int)glfwGetTime()-prev_move > 0)
+            {
+                prev_move += 1;
+                imposter.move(graph, rows, cols, player.row, player.col);
+            }
         }
+        if(game.tasks_completed == game.total_tasks) maze.open_exit();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

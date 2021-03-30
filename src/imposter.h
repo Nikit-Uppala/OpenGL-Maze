@@ -14,6 +14,7 @@ class Imposter: public Player
         int dist[101];
         int seconds;
     public:
+        Imposter() {}
         Imposter(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, glm::vec3 col_gap, 
         glm::vec3 scaling, glm::vec3 color): 
         Player(r, c, health, origin, row_gap, col_gap, scaling, color) { this->seconds = 0; }

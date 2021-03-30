@@ -15,6 +15,7 @@ class Maze
         void generate_maze(std::vector<int>graph[]);
         void draw(unsigned int shaderProgram, unsigned int VAO_h, unsigned VAO_v);
         bool included[50][50][2];
+        void open_exit();
     private:
         int rows, cols;
         glm::vec3 row_start, col_start;

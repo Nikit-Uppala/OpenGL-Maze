@@ -108,11 +108,7 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         switch(key)
         {
-            case 'L': 
-                game.lighting = !game.lighting;
-                if(game.lighting) glUseProgram(shaderProgram);
-                else glUseProgram(lightProgram); 
-                break;
+            case 'L': game.lighting = !game.lighting; break;
             case 'W':
                 if(!player.moveRow && !player.moveCol)
                     player.moveRow = -1;
@@ -205,13 +201,13 @@ int main()
     player.bindData(VAO, VBO);
     unsigned int VAO_bg, VBO_bg;
     background.bindData(VAO_bg, VBO_bg);
-    unsigned int VAO_btn;
-    game.bindData(VAO_btn);
+    unsigned int VAO_btn, VAO_pow_obs;
+    game.bindData(VAO_btn, VAO_pow_obs);
 
     shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
     lightProgram = createProgram(vertexShaderSource, lightingFragmentShaderSource);
     currentShader = shaderProgram;
-    glUseProgram(currentShader);
+    glUseProgram(shaderProgram);
 
     glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
     int location = glGetUniformLocation(shaderProgram, "projection");
@@ -219,24 +215,26 @@ int main()
     glm::mat4 view = glm::mat4(1.0f);
     location = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+    glUseProgram(lightProgram);
+    location = glGetUniformLocation(lightProgram, "projection");
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
+    location = glGetUniformLocation(lightProgram, "view");
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
     glEnable(GL_DEPTH_TEST);
     int prev_move = 0;
+    int same_frames = 0;
     while(!glfwWindowShouldClose(window))
     {
         if(!t.process_tick()) continue;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         game.decrease_timer();
+        if(game.time_left <= 0) break;
+        glUseProgram(currentShader);
         if(game.lighting)
-        {
             currentShader = shaderProgram;
-        }
         else
         {
             currentShader = lightProgram;
-            location = glGetUniformLocation(lightProgram, "projection");
-            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
-            location = glGetUniformLocation(lightProgram, "view");
-            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
             location = glGetUniformLocation(lightProgram, "viewPos");
             glm::vec3 position = origin - (float)player.row*row_gap*scaling + (float)player.col*col_gap*scaling;
             glUniform3f(location, position[0], position[1], 2.0f);
@@ -245,7 +243,7 @@ int main()
         }
         background.display(currentShader, VAO_bg);
         maze.draw(currentShader, VAO_h, VAO_v);
-        game.draw(currentShader, VAO_btn, origin, row_gap*scaling, scaling*col_gap);
+        game.draw(currentShader, VAO_btn, VAO_pow_obs, origin, row_gap*scaling, scaling*col_gap, cols);
         player.draw(currentShader, VAO);
         if(game.imposter_alive)
             imposter.draw(currentShader, VAO);
@@ -265,6 +263,13 @@ int main()
             {
                 prev_move += 1;
                 imposter.move(graph, rows, cols, player.row, player.col);
+            }
+            if(player.row == imposter.row && player.col == imposter.col)
+            {
+                same_frames += 1;
+                player.health -= same_frames/8 * 10;
+                if(player.health <= 0)
+                    break;
             }
         }
         if(game.tasks_completed == game.total_tasks) maze.open_exit();

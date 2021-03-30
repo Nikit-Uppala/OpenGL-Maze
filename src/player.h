@@ -52,6 +52,7 @@ class Player
         int frames;
         int moveCol;
         int moveRow;
+        float health;
     private:
         glm::vec3 origin;
         glm::vec3 row_gap;
@@ -59,6 +60,5 @@ class Player
         glm::vec3 scaling;
         glm::vec3 color;
         glm::vec3 position;
-        float health;
         int orientation;
 };

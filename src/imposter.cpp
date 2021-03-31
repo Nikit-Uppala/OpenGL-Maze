@@ -19,9 +19,9 @@ void Imposter::move(std::vector<int>graph[], int rows, int cols, int row_t, int 
     int present_cell = this->row*cols + this->col;
     bool visited[rows*cols];
     for(int i=0; i<rows*cols; i++) visited[i] = 0;
-    //Run DFS to get the path to the player
+    //Run DFS to get the shortest path to the player
     DFS(graph, present_cell, present_cell, visited);
-    while(this->parent[target_cell]!=present_cell)
+    while(this->parent[target_cell]!=present_cell) // backtracking to get where to move
         target_cell = this->parent[target_cell];
     int target_row = target_cell/cols;
     int target_col = target_cell%cols;

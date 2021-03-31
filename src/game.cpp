@@ -4,6 +4,7 @@
 
 Game::Game(int rows, int cols)
 {
+    // inititalising parameters
     srand(time(0));
     this->total_time = 120.0f; // 2 min time
     this->time_left = this->total_time;
@@ -70,12 +71,12 @@ void Game::draw(unsigned int shaderProgram, unsigned int VAO_btn, unsigned int V
     location = glGetUniformLocation(shaderProgram, "color");
     glUniform3f(location, Game::pow_color[0], Game::pow_color[1], Game::pow_color[2]);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
-    if(this->power_ups_released)
+    if(this->power_ups_released) // if power ups and obstcales are released then draw them
     {
         glBindVertexArray(VAO_pow_obs);
         for(int i=0; i<this->pows; i++)
         {
-            if(this->pow_touched[i]) continue; // if power up taken then continue
+            if(this->pow_touched[i]) continue; // if power up taken then continue(dont draw)
             int r = this->pow_cells[i]/cols;
             int c = this->pow_cells[i]%cols;
             glm::vec3 position = origin - (float)r*row_gap + (float)c*col_gap;
@@ -88,7 +89,7 @@ void Game::draw(unsigned int shaderProgram, unsigned int VAO_btn, unsigned int V
         }
         for(int i=0; i<this->obs; i++)
         {
-            if(this->obs_touched[i]) continue; // if power up taken then continue
+            if(this->obs_touched[i]) continue; // if power up taken then continue(dont draw)
             int r = this->obs_cells[i]/cols;
             int c = this->obs_cells[i]%cols;
             glm::vec3 position = origin - (float)r*row_gap + (float)c*col_gap;
@@ -104,6 +105,7 @@ void Game::draw(unsigned int shaderProgram, unsigned int VAO_btn, unsigned int V
 
 void Game::check_btn_press(int row, int col, int rows, int cols)
 {
+    // If player is in same cell as power up or obstcale then it gets activated
     int player_cell = row*cols+col;
     int vap_cell = this->vap_r*cols + this->vap_c;
     int pow_cell = this->pow_r*cols + this->pow_c;
@@ -122,6 +124,7 @@ void Game::check_btn_press(int row, int col, int rows, int cols)
 
 void Game::generate_pows_obs(int rows, int cols)
 {
+    // generating power ups and obstcales at random positions
     srand(time(0));
     int totalCells = rows*cols;
     this->pows = 1 + rand()%2;

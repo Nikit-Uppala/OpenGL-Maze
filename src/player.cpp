@@ -17,9 +17,10 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
     this->moveCol = 0;
     this->moveRow = 0;
     this->frames_in_dark = 0;
-    float a = 0.30f;
-    float b = 0.15f;
-    float angle = 5.0f;
+    float a = 0.30f; // semi major axis of ellipse of the curved surface
+    float b = 0.15f; // semi minor axis
+    float angle = 5.0f; // 180/5 triangles are drawn
+    // Next 3 lines centre of ellipse
     Player::curved_face[0] = 0.0f;
     Player::curved_face[1] = 0.35f;
     Player::curved_face[2] = 0.0f;
@@ -30,7 +31,7 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
         Player::curved_face[3*i+2] = 0.0f;
     }
 }
-
+// moving player from one cell to next cell in 8 frames so that the movement appears smooth
 void Player::move_row(int sign, bool canMove)
 {
     if(!canMove || this->row + sign < 0)
@@ -44,11 +45,11 @@ void Player::move_row(int sign, bool canMove)
     if(frames>=Player::numFrames)
     {
         this->row += sign;
-        this->moveRow = 0;
+        this->moveRow = 0; // stop moving
         this->frames = 0;
     }
-    if(sign == 1) this->orientation = 2;
-    else this->orientation = 3;
+    if(sign == 1) this->orientation = 2; // look down
+    else this->orientation = 3; // look up
 }
 
 void Player::move_col(int sign, bool canMove)
@@ -64,20 +65,21 @@ void Player::move_col(int sign, bool canMove)
     if(frames>=Player::numFrames)
     {
         this->col += sign;
-        this->moveCol = 0;
+        this->moveCol = 0; // stop moving
         this->frames = 0;
     }
-    if(sign == 1) this->orientation = 0;
-    else this->orientation = 1;
+    if(sign == 1) this->orientation = 0; // look right
+    else this->orientation = 1; // look left
 }
 
 void Player::draw(unsigned int shaderProgram, unsigned int VAO[])
 {
+    // Drawing player
     glm::mat4 model(1.0f);
     glm::vec3 position = this->origin - (float)this->row*this->row_gap + (float)this->col*this->col_gap;
     model = glm::translate(model, this->position);
     model = glm::scale(model, this->scaling);
-    switch(this->orientation)
+    switch(this->orientation) // based on orientation, rotating player so to look in the direction it is moving
     {
         case 1: model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); break;
         case 2: model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); break;

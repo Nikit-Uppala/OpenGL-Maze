@@ -42,6 +42,7 @@ void make_union(int p1, int p2, int parent[], int Size[])
 
 void Maze::kruskal(std::vector<std::pair<pi, int>>walls, std::vector<int>graph[])
 {
+    // Using randomized kruskal to generate a maze
     int totalCells = this->rows*this->cols;
     int parent[totalCells], Size[totalCells];
     for(int i=0; i<totalCells; i++) parent[i]=i, Size[i]=1;

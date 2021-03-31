@@ -8,6 +8,7 @@ Line::Line(float* vertices)
 
 void Line::bindData(unsigned int& VAO, unsigned int& VBO)
 {
+    // binding data
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);

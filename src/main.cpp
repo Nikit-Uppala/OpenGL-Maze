@@ -48,22 +48,22 @@ const char* lightingFragmentShaderSource = "#version 330 core\n"
                                         "vec3 lightDirection = normalize(lightPos-FragPos);\n"
                                         "vec3 reflectDir = reflect(-lightDirection, vec3(0.0f, 0.0f, 1.0f));\n"
                                         "vec3 viewDir = normalize(viewPos - FragPos);\n"
-                                        "float intensity = pow(max(dot(viewDir, reflectDir), 0.0f), 2.0f);\n"
+                                        "float intensity = pow(max(dot(viewDir, reflectDir), 0.0f), 2.4f);\n"
                                         "vec3 effect = specularStrength*intensity*vec3(1.0f, 1.0f, 1.0f);\n"
                                         "FragColor = vec4(effect * color, 1.0f);\n"
                                         "}\n";
-
+// Vertices for horizontal line
 float vertices_h[] = {
     -0.5f, 0.0f, 0.0f,
      0.5f, 0.0f, 0.0f
 };
-Line horizontal(vertices_h);
-
+Line horizontal(vertices_h); // Object created
+// Vertices for vertical line 
 float vertices_v[] = {
     0.0f, -0.5f, 0.0f,
     0.0f,  0.5f, 0.0f
 };
-Line vertical(vertices_v);
+Line vertical(vertices_v); // object created
 
 // Setting parameters for the start position of the maze, gap between rows and columns with appropirate scaling.
 glm::vec3 row_gap(0.0f, 1.0f, 0.0f);
@@ -140,7 +140,7 @@ void input(GLFWwindow* window, int key, int scancode, int action, int mods)
         }
     }
 }
-
+// This fucntion creates a shader of type 'type' and returns it.
 unsigned int createShader(const char* source, int type)
 {
     unsigned int shader = glCreateShader(type);
@@ -156,7 +156,7 @@ unsigned int createShader(const char* source, int type)
     }
     return shader;
 }
-
+// This fucntion creates a shader program.
 unsigned int createProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
 {
     unsigned int vertexShader = createShader(vertexShaderSource, GL_VERTEX_SHADER);
@@ -175,6 +175,7 @@ unsigned int createProgram(const char* vertexShaderSource, const char* fragmentS
     return program;
 }
 
+// This function checks whether player collides/being in same cell as power ups and obstacles
 void handle_power_ups()
 {
     if(game.power_ups_released)
@@ -197,6 +198,14 @@ void handle_power_ups()
             }
         }
     }
+}
+
+void handle_player_movement()
+{
+    if(player.moveCol != 0)
+        player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
+    else if(player.moveRow != 0)
+        player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
 }
 
 int main()
@@ -228,6 +237,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, resize_callback);
     glfwSetKeyCallback(window, input);
 
+    // Storing all the VAOs for different objects - horizontal line, vertical line, background, player, power ups and buttons
     unsigned int VAO_h, VBO_h;
     horizontal.bindData(VAO_h, VBO_h);
     unsigned int VAO_v, VBO_v;
@@ -245,6 +255,7 @@ int main()
     currentShader = shaderProgram;
     glUseProgram(shaderProgram);
 
+    // Using orthographic projection for 16:9 aspect ratio
     glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
     int location = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
@@ -265,53 +276,59 @@ int main()
         if(!t.process_tick()) continue;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         game.decrease_timer();
-        if(game.time_left <= 0) break;
-        glUseProgram(currentShader);
+        if(game.time_left <= 0) break; // game ends when time is up
+        glUseProgram(currentShader); // Use shader based on lighting on or off
         if(game.lighting)
+        {
+            player.frames_in_dark = 0;
             currentShader = shaderProgram;
+        }
         else
         {
             currentShader = lightProgram;
+            // increase player health when light is off
             player.frames_in_dark++;
             player.health = std::max(player.health + player.frames_in_dark/32 * 5.0f, max_health);
+            // Assigning viewing and light source positions
             location = glGetUniformLocation(lightProgram, "viewPos");
             glm::vec3 position = origin - (float)player.row*row_gap*scaling + (float)player.col*col_gap*scaling;
             glUniform3f(location, position[0], position[1], 2.0f);
             location = glGetUniformLocation(lightProgram, "lightPos");
             glUniform3f(location, position[0], position[1], 1.0f);
         }
+        // Displaying objects - background, maze, player, imposter, etc 
         background.display(currentShader, VAO_bg);
         maze.draw(currentShader, VAO_h, VAO_v);
         game.draw(currentShader, VAO_btn, VAO_pow_obs, origin, row_gap*scaling, scaling*col_gap, cols);
         player.draw(currentShader, VAO);
-        if(player.moveCol != 0)
-            player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
-        else if(player.moveRow != 0)
-            player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
+        // Handling player movement
+        handle_player_movement();
         game.check_btn_press(player.row, player.col, rows, cols);
         if(player.col == cols) break;
         handle_power_ups();
         if(game.imposter_alive)
         {
             imposter.draw(currentShader, VAO);
+            // Move imposter
             if(imposter.moveCol != 0)
                 imposter.move_col(imposter.moveCol, 1);
             else if(imposter.moveRow != 0)
                 imposter.move_row(imposter.moveRow, 1);
-            if(glfwGetTime()-prev_move > time_gap)
+            if(glfwGetTime()-prev_move > time_gap) // Moving imposter at a frequncy of once in 0.4 seconds
             {
                 prev_move += time_gap;
                 imposter.move(graph, rows, cols, player.row, player.col);
             }
-            if(player.row == imposter.row && player.col == imposter.col)
+            if(player.row == imposter.row && player.col == imposter.col) // if position of player and imposter is the same
             {
                 same_frames += 1;
-                player.health -= same_frames/8 * 10;
+                player.health -= same_frames/8 * 10; // depending on time health is decreased.
                 if(player.health <= 0)
                     break;
             }
+            else same_frames = 0;
         }
-        if(game.tasks_completed == game.total_tasks) maze.open_exit();
+        if(game.tasks_completed == game.total_tasks) maze.open_exit(); // exit opens when the user completes 2 tasks
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

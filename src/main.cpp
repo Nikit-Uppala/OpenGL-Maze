@@ -48,7 +48,7 @@ const char* lightingFragmentShaderSource = "#version 330 core\n"
                                         "vec3 lightDirection = normalize(lightPos-FragPos);\n"
                                         "vec3 reflectDir = reflect(-lightDirection, vec3(0.0f, 0.0f, 1.0f));\n"
                                         "vec3 viewDir = normalize(viewPos - FragPos);\n"
-                                        "float intensity = pow(max(dot(viewDir, reflectDir), 0.0f), 2.6f);\n"
+                                        "float intensity = pow(max(dot(viewDir, reflectDir), 0.0f), 2.0f);\n"
                                         "vec3 effect = specularStrength*intensity*vec3(1.0f, 1.0f, 1.0f);\n"
                                         "FragColor = vec4(effect * color, 1.0f);\n"
                                         "}\n";
@@ -65,6 +65,7 @@ float vertices_v[] = {
 };
 Line vertical(vertices_v);
 
+// Setting parameters for the start position of the maze, gap between rows and columns with appropirate scaling.
 glm::vec3 row_gap(0.0f, 1.0f, 0.0f);
 glm::vec3 col_gap(1.0f, 0.0f, 0.0f);
 glm::vec3 row_start(-14.0f, 5.5f, 0.0f);
@@ -73,17 +74,21 @@ glm::vec3 col_start = row_start - scaling/2.0f*row_gap - scaling/2.0f*col_gap;
 glm::vec3 origin(row_start[0], col_start[1], 0.0f);
 glm::vec3 character_scaling(1.3f, 1.3f, 0.0f);
 
-Timer t(1/60.0f);
-
-Player player(0, 0, 100, origin, scaling*row_gap, scaling*col_gap, character_scaling, row_gap);
+Timer t(1/60.0f); // Timer so that the experience is same in every device
+// Player starts in the cell (0, 0) with 100 health. 
+float max_health = 100.0f;
+Player player(0, 0, max_health, origin, scaling*row_gap, scaling*col_gap, character_scaling, row_gap);
+// Imposter starts at a random cell in the maze
 Imposter imposter;
 
 Maze maze(rows, cols, row_start, col_start, row_gap, col_gap, scaling);
-std::vector<int>graph[151];
-Game game(rows, cols);
+std::vector<int>graph[151]; // Storing the maze as a graph to find path from imposter to the player
+Game game(rows, cols); // This object has all the information like time left, where are the task buttons, power ups, obstacles
+// Maze is displayed with some background so that the lightting feature can be experienced
 Background background(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(cols*2.0f, rows*2.0f, 0.0f), glm::vec3(0.0f, -1.5f, -0.5f));
 unsigned int currentShader, shaderProgram, lightProgram;
 
+// This function creates a window and returns it
 GLFWwindow* createWindow()
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -97,18 +102,25 @@ GLFWwindow* createWindow()
     return window;
 }
 
+// This callback sets the viewport whenever the window is resized
 void resize_callback(GLFWwindow* window, int w, int h)
 {
     glViewport(0, 0, w, h);
 }
 
+// This functions handles keyboard events in the game
 void input(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if(action == 1)
+    if(action == 1) // If key is pressed
     {
+        // WSAD for movement of the player
+        // L for toggling the light
         switch(key)
         {
-            case 'L': game.lighting = !game.lighting; break;
+            case 'L': 
+                game.lighting = !game.lighting;
+                player.frames_in_dark = 0; 
+                break;
             case 'W':
                 if(!player.moveRow && !player.moveCol)
                     player.moveRow = -1;
@@ -161,6 +173,30 @@ unsigned int createProgram(const char* vertexShaderSource, const char* fragmentS
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     return program;
+}
+
+void handle_power_ups()
+{
+    if(game.power_ups_released)
+    {
+        int player_cell = player.row*cols + player.col;
+        for(int i=0; i<game.pows; i++)
+        {
+            if(!game.pow_touched[i] && player_cell == game.pow_cells[i]) // If player is in same cell as power up
+            {
+                game.pow_touched[i] = 1;
+                player.health = std::max(player.health + game.pow_score, max_health);
+            }
+        }
+        for(int i=0; i<game.obs; i++)
+        {
+            if(!game.obs_touched[i] && player_cell == game.obs_cells[i]) // If player is in same cell as obstacle
+            {
+                game.obs_touched[i] = 1;
+                player.health = std::max(player.health - game.obs_score, 0.0f);
+            }
+        }
+    }
 }
 
 int main()
@@ -221,7 +257,8 @@ int main()
     location = glGetUniformLocation(lightProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
     glEnable(GL_DEPTH_TEST);
-    int prev_move = 0;
+    float prev_move = 0;
+    float time_gap = 0.4f;
     int same_frames = 0;
     while(!glfwWindowShouldClose(window))
     {
@@ -235,6 +272,8 @@ int main()
         else
         {
             currentShader = lightProgram;
+            player.frames_in_dark++;
+            player.health = std::max(player.health + player.frames_in_dark/32 * 5.0f, max_health);
             location = glGetUniformLocation(lightProgram, "viewPos");
             glm::vec3 position = origin - (float)player.row*row_gap*scaling + (float)player.col*col_gap*scaling;
             glUniform3f(location, position[0], position[1], 2.0f);
@@ -245,23 +284,23 @@ int main()
         maze.draw(currentShader, VAO_h, VAO_v);
         game.draw(currentShader, VAO_btn, VAO_pow_obs, origin, row_gap*scaling, scaling*col_gap, cols);
         player.draw(currentShader, VAO);
-        if(game.imposter_alive)
-            imposter.draw(currentShader, VAO);
         if(player.moveCol != 0)
             player.move_col(player.moveCol, !maze.included[player.row][player.col+(player.moveCol==1)][1]);
         else if(player.moveRow != 0)
             player.move_row(player.moveRow, !maze.included[player.row+(player.moveRow==1)][player.col][0]);
         game.check_btn_press(player.row, player.col, rows, cols);
         if(player.col == cols) break;
+        handle_power_ups();
         if(game.imposter_alive)
         {
+            imposter.draw(currentShader, VAO);
             if(imposter.moveCol != 0)
                 imposter.move_col(imposter.moveCol, 1);
             else if(imposter.moveRow != 0)
                 imposter.move_row(imposter.moveRow, 1);
-            if((int)glfwGetTime()-prev_move > 0)
+            if(glfwGetTime()-prev_move > time_gap)
             {
-                prev_move += 1;
+                prev_move += time_gap;
                 imposter.move(graph, rows, cols, player.row, player.col);
             }
             if(player.row == imposter.row && player.col == imposter.col)

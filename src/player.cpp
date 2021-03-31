@@ -16,6 +16,7 @@ Player::Player(int r, int c, float health, glm::vec3 origin, glm::vec3 row_gap, 
     this->frames = 0;
     this->moveCol = 0;
     this->moveRow = 0;
+    this->frames_in_dark = 0;
     float a = 0.30f;
     float b = 0.15f;
     float angle = 5.0f;

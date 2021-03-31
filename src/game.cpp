@@ -20,6 +20,8 @@ Game::Game(int rows, int cols)
     this->total_tasks = 2;
     this->tasks_completed = 0;
     this->lighting = 1;
+    this->pow_score = 15;
+    this->obs_score = 15;
 }
 
 void Game::decrease_timer()

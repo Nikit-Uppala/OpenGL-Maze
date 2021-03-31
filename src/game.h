@@ -40,6 +40,8 @@ class Game
         int obs_cells[2];
         int tasks_completed;
         int total_tasks;
+        float pow_score;
+        float obs_score;
         float time_left;
         int pows, obs;
     private:

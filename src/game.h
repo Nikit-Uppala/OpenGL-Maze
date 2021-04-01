@@ -34,6 +34,7 @@ class Game
         bool imposter_alive;
         bool power_ups_released;
         bool lighting;
+        int game_over;
         bool pow_touched[2];
         bool obs_touched[2];
         int pow_cells[2];

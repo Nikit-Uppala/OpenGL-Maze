@@ -9,6 +9,9 @@
 #include<vector>
 #include "timer.h"
 #include "game.h"
+#include<string>
+#include "textrenderer.h"
+#include<stdio.h>
 
 const unsigned int width = 1280;
 const unsigned int height = 720;
@@ -86,7 +89,10 @@ std::vector<int>graph[151]; // Storing the maze as a graph to find path from imp
 Game game(rows, cols); // This object has all the information like time left, where are the task buttons, power ups, obstacles
 // Maze is displayed with some background so that the lightting feature can be experienced
 Background background(glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(cols*2.0f, rows*2.0f, 0.0f), glm::vec3(0.0f, -1.5f, -0.5f));
-unsigned int currentShader, shaderProgram, lightProgram;
+unsigned int currentShader, shaderProgram, lightProgram, textProgram;
+
+// Text renderer object
+TextRenderer render;
 
 // This function creates a window and returns it
 GLFWwindow* createWindow()
@@ -186,7 +192,7 @@ void handle_power_ups()
             if(!game.pow_touched[i] && player_cell == game.pow_cells[i]) // If player is in same cell as power up
             {
                 game.pow_touched[i] = 1;
-                player.health = std::max(player.health + game.pow_score, max_health);
+                player.health = std::min(player.health + game.pow_score, max_health);
             }
         }
         for(int i=0; i<game.obs; i++)
@@ -195,6 +201,7 @@ void handle_power_ups()
             {
                 game.obs_touched[i] = 1;
                 player.health = std::max(player.health - game.obs_score, 0.0f);
+                if(player.health <= 0) game.game_over = 2;
             }
         }
     }
@@ -250,33 +257,61 @@ int main()
     unsigned int VAO_btn, VAO_pow_obs;
     game.bindData(VAO_btn, VAO_pow_obs);
 
+    glEnable(GL_DEPTH_TEST);
+    // Enabling blending for text rendering
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     shaderProgram = createProgram(vertexShaderSource, fragmentShaderSource);
     lightProgram = createProgram(vertexShaderSource, lightingFragmentShaderSource);
+    textProgram = createProgram(render.vertexShaderSource, render.fragmentShaderSource);
+    
+    // Using orthographic projection for 16:9 aspect ratio
+    glm::mat4 proj = glm::ortho(0.0f, (float)width, 0.0f, (float)height);
+    glUseProgram(textProgram);
+    glUniformMatrix4fv(glGetUniformLocation(textProgram, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
+    
     currentShader = shaderProgram;
     glUseProgram(shaderProgram);
 
-    // Using orthographic projection for 16:9 aspect ratio
     glm::mat4 projection = glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f);
     int location = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
     glm::mat4 view = glm::mat4(1.0f);
     location = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
+    
     glUseProgram(lightProgram);
     location = glGetUniformLocation(lightProgram, "projection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projection));
     location = glGetUniformLocation(lightProgram, "view");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(view));
-    glEnable(GL_DEPTH_TEST);
+    
+    unsigned int VAO_text, VBO_text;
+    render.bindData(VAO_text, VBO_text);
+    render.createMap();
+
     float prev_move = 0;
     float time_gap = 0.4f;
     int same_frames = 0;
+    char HUD[200], message[200]; // HUD display and after game message
     while(!glfwWindowShouldClose(window))
     {
         if(!t.process_tick()) continue;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        if(game.game_over != 0)
+        {
+            glm::vec3 color;
+            if(game.game_over == 2) color = glm::vec3(0.0f, 0.0f, 1.0f), sprintf(message, "Game Over");
+            else if(game.game_over == 1) color = glm::vec3(1.0f, 0.0f, 0.0f), sprintf(message, "You lost! :(");
+            else color = glm::vec3(0.0f, 1.0f, 0.0f), sprintf(message, "You Won! :)");
+            render.renderText(textProgram, message, 512, 360, 1.5f, color, VAO_text, VBO_text);
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+            continue;
+        }
         game.decrease_timer();
-        if(game.time_left <= 0) break; // game ends when time is up
+        if(game.time_left <= 0) game.game_over = 2; // game ends when time is up
         glUseProgram(currentShader); // Use shader based on lighting on or off
         if(game.lighting)
         {
@@ -304,7 +339,7 @@ int main()
         // Handling player movement
         handle_player_movement();
         game.check_btn_press(player.row, player.col, rows, cols);
-        if(player.col == cols) break;
+        if(player.col == cols) game.game_over = 3;
         handle_power_ups();
         if(game.imposter_alive)
         {
@@ -324,11 +359,13 @@ int main()
                 same_frames += 1;
                 player.health -= same_frames/8 * 10; // depending on time health is decreased.
                 if(player.health <= 0)
-                    break;
+                    game.game_over = 1, player.health = 0;
             }
             else same_frames = 0;
         }
         if(game.tasks_completed == game.total_tasks) maze.open_exit(); // exit opens when the user completes 2 tasks
+        sprintf(HUD, "Time Left: %d sec, Health: %d, Tasks completed: %d", (int)game.time_left, (int)player.health, game.tasks_completed);
+        render.renderText(textProgram, HUD, 100.0f, 656.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f), VAO_text, VBO_text);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

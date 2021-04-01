@@ -6,7 +6,7 @@ Game::Game(int rows, int cols)
 {
     // inititalising parameters
     srand(time(0));
-    this->total_time = 120.0f; // 2 min time
+    this->total_time = 60.0f; // 2 min time
     this->time_left = this->total_time;
     this->imposter_alive = 1;
     int cell_vap = rand()%(rows*cols);
@@ -22,6 +22,7 @@ Game::Game(int rows, int cols)
     this->tasks_completed = 0;
     this->lighting = 1;
     this->pow_score = 15;
+    this->game_over = 0;
     this->obs_score = 15;
 }
 

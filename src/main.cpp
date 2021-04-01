@@ -362,8 +362,9 @@ int main()
             }
         }
         if(game.tasks_completed == game.total_tasks) maze.open_exit(); // exit opens when the user completes 2 tasks
-        sprintf(HUD, "Time Left: %d sec, Health: %d, Tasks completed: %d", (int)game.time_left, (int)player.health, game.tasks_completed);
-        render.renderText(textProgram, HUD, 100.0f, 656.0f, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f), VAO_text, VBO_text);
+        sprintf(HUD, "Time Left: %d sec, Health: %d, Tasks completed: %d, Lights: %s", 
+            (int)game.time_left, (int)player.health, game.tasks_completed, game.lighting?"ON":"OFF");
+        render.renderText(textProgram, HUD, 100.0f, 656.0f, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f), VAO_text, VBO_text);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

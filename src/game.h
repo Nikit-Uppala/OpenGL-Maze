@@ -6,12 +6,7 @@
 
 class Game
 {
-    float btn_vertices[12] = {
-        -0.5f, -0.5f, -0.1f,
-         0.5f, -0.5f, -0.1f,
-         0.5f,  0.5f, -0.1f,
-        -0.5f,  0.5f, -0.1f
-    };
+    float btn_vertices[232];
     float pow_obs_vertices[9] = {
         -0.5f, -0.5f, -0.05f,
          0.5f, -0.5f, -0.05f,

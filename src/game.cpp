@@ -26,6 +26,17 @@ Game::Game(int rows, int cols)
     this->obs_score = 15;
     this->health_gain_in_dark = 1.0f/16.0f;
     this->health_loss_imposter = 20.0f/8.0f;
+    float angle = 5.0f;
+    Game::btn_vertices[0] = 0.0f;
+    Game::btn_vertices[1] = 0.0f;
+    Game::btn_vertices[2] = 0.0f;
+    float radius = 0.5f;
+    for(int i=1; i<=73; i++)
+    {
+        Game::btn_vertices[i*3] = radius * glm::cos(glm::radians((float)(i-1)*angle));
+        Game::btn_vertices[i*3+1] = radius * glm::sin(glm::radians((float)(i-1)*angle));
+        Game::btn_vertices[i*3+2] = -0.1f;
+    }
 }
 
 void Game::decrease_timer()
@@ -66,14 +77,14 @@ void Game::draw(unsigned int shaderProgram, unsigned int VAO_btn, unsigned int V
     location = glGetUniformLocation(shaderProgram, "color");
     glUniform3f(location, Game::vap_color[0], Game::vap_color[1], Game::vap_color[2]);
     glBindVertexArray(VAO_btn);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 74);
     glm::vec3 pow_pos = origin - (float)this->pow_r*row_gap + (float)this->pow_c*col_gap;
     model = glm::translate(glm::mat4(1.0f), pow_pos);
     location = glGetUniformLocation(shaderProgram, "model");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
     location = glGetUniformLocation(shaderProgram, "color");
     glUniform3f(location, Game::pow_color[0], Game::pow_color[1], Game::pow_color[2]);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 74);
     if(this->power_ups_released) // if power ups and obstcales are released then draw them
     {
         glBindVertexArray(VAO_pow_obs);

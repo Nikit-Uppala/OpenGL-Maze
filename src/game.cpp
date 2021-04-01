@@ -24,6 +24,8 @@ Game::Game(int rows, int cols)
     this->pow_score = 15;
     this->game_over = 0;
     this->obs_score = 15;
+    this->health_gain_in_dark = 1.0f/16.0f;
+    this->health_loss_imposter = 20.0f/8.0f;
 }
 
 void Game::decrease_timer()

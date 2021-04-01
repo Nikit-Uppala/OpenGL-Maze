@@ -13,9 +13,9 @@ class Game
         -0.5f,  0.5f, -0.1f
     };
     float pow_obs_vertices[9] = {
-        -0.5f, -0.5f, -0.1f,
-         0.5f, -0.5f, -0.1f,
-         0.0f,  0.5f, -0.1f
+        -0.5f, -0.5f, -0.05f,
+         0.5f, -0.5f, -0.05f,
+         0.0f,  0.5f, -0.05f
     };
     glm::vec3 vap_color = glm::vec3(1.0f, 0.0f, 1.0f);
     glm::vec3 pow_color = glm::vec3(0.0f, 1.0f, 1.0f);
@@ -30,6 +30,8 @@ class Game
                 glm::vec3 origin, glm::vec3 row_gap, glm::vec3 col_gap, int cols);
         void check_btn_press(int row, int col, int rows, int cols);
         int vap_r, vap_c;
+        float health_gain_in_dark;
+        float health_loss_imposter;
         int pow_r, pow_c;
         bool imposter_alive;
         bool power_ups_released;

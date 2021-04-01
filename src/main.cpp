@@ -323,7 +323,7 @@ int main()
             currentShader = lightProgram;
             // increase player health when light is off
             player.frames_in_dark++;
-            player.health = std::max(player.health + player.frames_in_dark/32 * 5.0f, max_health);
+            player.health = std::min(player.health + game.health_gain_in_dark, max_health);
             // Assigning viewing and light source positions
             location = glGetUniformLocation(lightProgram, "viewPos");
             glm::vec3 position = origin - (float)player.row*row_gap*scaling + (float)player.col*col_gap*scaling;
@@ -356,12 +356,10 @@ int main()
             }
             if(player.row == imposter.row && player.col == imposter.col) // if position of player and imposter is the same
             {
-                same_frames += 1;
-                player.health -= same_frames/8 * 10; // depending on time health is decreased.
+                player.health -= game.health_loss_imposter; // depending on time health is decreased.
                 if(player.health <= 0)
                     game.game_over = 1, player.health = 0;
             }
-            else same_frames = 0;
         }
         if(game.tasks_completed == game.total_tasks) maze.open_exit(); // exit opens when the user completes 2 tasks
         sprintf(HUD, "Time Left: %d sec, Health: %d, Tasks completed: %d", (int)game.time_left, (int)player.health, game.tasks_completed);
